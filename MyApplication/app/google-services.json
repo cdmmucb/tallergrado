@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "494263196576",
+    "project_id": "ucbapp-cea68",
+    "storage_bucket": "ucbapp-cea68.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:494263196576:android:7eb89204c1f63452bae2c5",
+        "android_client_info": {
+          "package_name": "com.example.ucbapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "494263196576-50166h63m9g00to2r6tugcspu4c7q36b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.ucbapp",
+            "certificate_hash": "0c50226844d79d9ee9375ad0752fbc20eb2290ec"
+          }
+        },
+        {
+          "client_id": "494263196576-egvf5ulv2gljgqn0aak827r160bnbjn9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBx2iQjjKiT9dHGTUc4QyiZ04RU3-c_NgI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "494263196576-egvf5ulv2gljgqn0aak827r160bnbjn9.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
