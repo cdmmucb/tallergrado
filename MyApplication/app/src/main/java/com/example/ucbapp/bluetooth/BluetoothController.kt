@@ -122,7 +122,7 @@ class BluetoothController(private val context: Context) : Thread() {
     }/*.flowOn(Dispatchers.IO)*/
     // }
 
-    fun uploadData(isLogAll: Boolean/*setData: Unit*/): Flow<String> = flow{
+    fun uploadData(isLogAll: Boolean/*setData: Unit*/): Flow<String> = flow {
 
 
         var mmInStream = bluetoothSocket!!.inputStream
@@ -157,18 +157,18 @@ class BluetoothController(private val context: Context) : Thread() {
 
 
 
-                mensaje += aux
+            mensaje += aux
 
 
-                if (mensaje.last() == 'z') {
+            if (mensaje.last() == 'z') {
 
 
-                    emit(mensaje)
+                emit(mensaje)
 
-                    mensaje = ""
-                } else {
-                    Log.v("abc", "no entra ")
-                }
+                mensaje = ""
+            } else {
+
+            }
 
 
         }

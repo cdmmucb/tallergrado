@@ -56,6 +56,7 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+import kotlin.math.ceil
 
 @Composable
 fun LogScreen(
@@ -78,12 +79,17 @@ fun LogScreen(
     var data by rememberSaveable { mutableStateOf("") }
     //var flow by rememberSaveable { mutableStateOf("") }
     var textoData by rememberSaveable { mutableStateOf("") }
+    var textoData2 by rememberSaveable { mutableStateOf("") }
+    var textoData3 by rememberSaveable { mutableStateOf("") }
+    var textoData4 by rememberSaveable { mutableStateOf("") }
+
     var textoAlarma by rememberSaveable { mutableStateOf("") }
 
     var pickedTime by remember { mutableStateOf(LocalTime.now()) }
     var actualTime by remember { mutableStateOf(LocalTime.now()) }
     var tiempoDisponible by remember { mutableStateOf(0.0) }
     var tiempoParaSobriedad by remember { mutableStateOf(0.0) }
+    var tiempoParaSobriedadMin by remember { mutableStateOf(0) }
     var m by remember { mutableStateOf(if (pickedTime.hour < 13) "am" else "pm") }
 
     val formattedTime by remember {
@@ -98,9 +104,9 @@ fun LogScreen(
     val (selectedOption, onOptionSelected) = remember { mutableStateOf(radioOptions[0]) }
 
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().padding(10.dp),
         verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
 
         if (isLogging) {
@@ -133,7 +139,22 @@ fun LogScreen(
 
                 }
             } else {
+                Spacer(modifier = Modifier.height(16.dp))
                 Text(textoData)
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(textoData2)
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(textoData3)
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(textoData4)
+
+                if(textoData4==""){
+
+                }else{
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Se aclara que estos datos no son exactos y se le aconseja no conducir a menos que su nivel de alcohol sea 0.")
+                }
+
 
             }
 
@@ -155,74 +176,21 @@ fun LogScreen(
                 isLogAll = false
 
                 CoroutineScope(Dispatchers.Default).launch {
-                    try{
+                    try {
                         bluetoothController!!.uploadData(isLogAll).collect { value ->
-                            Log.v("abc", "me rio " + value)
+
                             //modificar data
-                        }
-                    }
-                    catch(e: Exception){
-                        Log.v("abc", "exception "+e.message+ "    completo   "+e.toString())
-                    }
 
-                }
+                            var lol = value.substring(0, value.length - 1)
 
+                            var cadena = lol.split(",").toTypedArray()
 
-            }) {
-                Text(text = "Solo monitorear exposición a gases nocivos")
-            }
-
-            Button(onClick = {
-                //onLogAll
-                isLogging = true
-                isLogAll = true
-                CoroutineScope(Dispatchers.Default).launch {
-                    try{
-                    bluetoothController!!.uploadData(isLogAll).collect { value ->
-//modificar data
-
-                        var lol =value.substring(0, value.length - 1)
-                        Log.v("abc", "me rio cortado:   " + lol)
-                        var cadena = lol.split(",").toTypedArray()
-
-                        firebaseClient.registrarLogGas(
-                            LogGas(
-                                userData!!.userId,
-                                "CH4 (metano)",
-                                cadena.get(1).toDouble(),
-                                "ppm",
-                                LocalDate.now().dayOfMonth,
-                                LocalDate.now().monthValue,
-                                LocalDate.now().year,
-                                LocalTime.now().hour,
-                                LocalTime.now().minute,
-                                LocalTime.now().second
-                            )
-                        )
-
-                        firebaseClient.registrarLogGas(
-                            LogGas(
-                                userData!!.userId,
-                                "CO (monóxido de carbono)",
-                                cadena.get(2).toDouble(),
-                                "ppm",
-                                LocalDate.now().dayOfMonth,
-                                LocalDate.now().monthValue,
-                                LocalDate.now().year,
-                                LocalTime.now().hour,
-                                LocalTime.now().minute,
-                                LocalTime.now().second
-                            )
-                        )
-
-                        textoData = "CH4 (metano) " + cadena.get(1) + "ppm; CO (monóxido de carbono): " + cadena.get(2)+" ppm"
-
-                        if (isLogAll) {
-                            firebaseClient.registrarLogAlcohol(
-                                LogAlcohol(
-                                    userData.userId,
-                                    cadena.get(0).toDouble(),
-                                    "mg/L",
+                            firebaseClient.registrarLogGas(
+                                LogGas(
+                                    userData!!.userId,
+                                    "CH4 (metano)",
+                                    cadena.get(1).toDouble(),
+                                    "ppm",
                                     LocalDate.now().dayOfMonth,
                                     LocalDate.now().monthValue,
                                     LocalDate.now().year,
@@ -231,92 +199,288 @@ fun LogScreen(
                                     LocalTime.now().second
                                 )
                             )
-                        }
 
-                        val bracUsuario = cadena.get(0).toDouble()
-                        if (selectedOption == radioOptions[0]) {
-                            //usuario conducira
+                            firebaseClient.registrarLogGas(
+                                LogGas(
+                                    userData!!.userId,
+                                    "CO (monóxido de carbono)",
+                                    cadena.get(2).toDouble(),
+                                    "ppm",
+                                    LocalDate.now().dayOfMonth,
+                                    LocalDate.now().monthValue,
+                                    LocalDate.now().year,
+                                    LocalTime.now().hour,
+                                    LocalTime.now().minute,
+                                    LocalTime.now().second
+                                )
+                            )
 
-                            if (bracUsuario > 0.25) {
+                            textoData = "CH4 (metano) " + cadena.get(1) + " ppm"
+                            textoData2 = "CO (monóxido de carbono): " + cadena.get(2) + " ppm"
 
+                            //}
 
-                                actualTime = LocalTime.now()
-                                if (pickedTime > actualTime) {
-                                    tiempoDisponible =
-                                        (pickedTime.hour.toDouble() + (pickedTime.minute.toDouble() / 60.0)) - (actualTime.hour.toDouble() + (actualTime.minute.toDouble() / 60.0))
+                            /*   if(cadena.get(1).toDouble()>1000.0){
+                                   isAlarma=true
+
+                                   if(cadena.get(2).toDouble()>200.0){
+                                       textoAlarma="Concentración nociva de CH4 (metano) = "+cadena.get(1).toDouble()+" ppm y CO (monóxido de carbono) = "+cadena.get(2).toDouble()+" ppm"
+                                   }else{
+                                       textoAlarma="Concentración nociva de CH4 (metano) = "+cadena.get(1).toDouble()+" ppm"
+                                   }
+                               }else{
+                                   if(cadena.get(2).toDouble()>200.0){
+                                       isAlarma=true
+                                       textoAlarma="Concentración nociva de CO (monóxido de carbono) = "+cadena.get(2).toDouble()+" ppm"
+                                   }else{
+                                   }
+
+                               }*/
+
+                            if (cadena.get(1).toDouble() > 50.0) {
+                                isAlarma = true
+
+                                if (cadena.get(2).toDouble() > 5.0) {
+                                    textoAlarma =
+                                        "Concentración nociva de CH4 (metano) = " + cadena.get(1)
+                                            .toDouble() + " ppm y CO (monóxido de carbono) = " + cadena.get(
+                                            2
+                                        ).toDouble() + " ppm"
                                 } else {
-                                    tiempoDisponible =
-                                        (pickedTime.hour.toDouble() + 24 + (pickedTime.minute.toDouble() / 60.0)) - (actualTime.hour.toDouble() + (actualTime.minute.toDouble() / 60.0))
+                                    textoAlarma =
+                                        "Concentración nociva de CH4 (metano) = " + cadena.get(1)
+                                            .toDouble() + " ppm"
                                 }
-
-                                tiempoParaSobriedad = (2 * (bracUsuario -0.25)) / 0.015
-
-                                if (tiempoParaSobriedad > tiempoDisponible) {
-                                    textoData+="Su nivel de alcohol es "+(2*bracUsuario)+"(BAC). Debe dejar de beber durante "+tiempoParaSobriedad+" horas para poder conducir. No podrá conducir a las "+formattedTime+m+" horas. Se aclara que estos datos no son exactos y se le aconseja no conducir a menos que su nivel de alcohol sea 0. (Este mensaje sale si el BrAC del usuario está por encima del límite legal de conducción)"
-
-                                } else {
-                                    textoData+="Su nivel de alcohol es "+(2*bracUsuario)+"(BAC). Debe dejar de beber durante "+tiempoParaSobriedad+" horas para poder conducir. Se aclara que estos datos no son exactos y se le aconseja no conducir a menos que su nivel de alcohol sea 0. (Este mensaje sale si el BrAC del usuario está por encima del límite legal de conducción)"
-                                }
-
                             } else {
-                                textoData+="Su nivel de alcohol es "+(2*bracUsuario)+"(BAC). Puede conducir. Se encuentra dentro del límite legal de alcohol en sangre. Se aclara que estos datos no son exactos y se le aconseja no conducir a menos que su nivel de alcohol sea 0. (Este mensaje sale si el BrAC del usuario está por debajo del límite legal de conducción)"
-                            }
-                        } else {
-                            //usuario no conducira
+                                if (cadena.get(2).toDouble() > 5.0) {
+                                    isAlarma = true
+                                    textoAlarma =
+                                        "Concentración nociva de CO (monóxido de carbono) = " + cadena.get(
+                                            2
+                                        ).toDouble() + " ppm"
+                                } else {
+                                }
 
-                            if (bracUsuario > 0.25){
-                                tiempoParaSobriedad = (2 * (bracUsuario -0.25)) / 0.015
-                                textoData+="Su nivel de alcohol es "+(2*bracUsuario)+"(BAC). Debe dejar de beber durante "+tiempoParaSobriedad+" horas para estar sobrio. Se aclara que estos datos no son exactos y se le aconseja no conducir a menos que su nivel de alcohol sea 0. (Este mensaje sale si el BrAC del usuario está por encima del límite legal de conducción)"
-                            }else{
-                                textoData+="Su nivel de alcohol es "+(2*bracUsuario)+"(BAC). Está sobrio. Se aclara que estos datos no son exactos y se le aconseja no conducir a menos que su nivel de alcohol sea 0. (Este mensaje sale si el BrAC del usuario está por debajo del límite legal de conducción)"
                             }
+
+                            //si el estado alarma fue activado lanzar vibracion
+                            if (isAlarma) {
+                                // Handling vibrations for Android 8.0 (Oreo) and above
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                    val effect = VibrationEffect.createOneShot(
+                                        1000000,
+                                        VibrationEffect.DEFAULT_AMPLITUDE
+                                    )
+                                    vibrator.vibrate(effect)
+                                } else {
+                                    // Handling vibrations for devices below Android 8.0
+                                    vibrator.vibrate(1000000)
+                                }
+                            }
+
+
+                            //modificar data
                         }
-
-                    //}
-
-                                if(cadena.get(1).toDouble()>1000.0){
-                                    isAlarma=true
-
-                                    if(cadena.get(2).toDouble()>200.0){
-                                        textoAlarma="CH4 (metano) elevado... y CO (monóxido de carbono) elevado..."
-                                    }else{
-                                        textoAlarma="CH4 (metano) elevado..."
-                                    }
-                                }else{
-                                    if(cadena.get(2).toDouble()>200.0){
-                                        isAlarma=true
-                                        textoAlarma="CO (monóxido de carbono) elevado..."
-                                    }else{
-                                    }
-
-                                }
-
-                                //si el estado alarma fue activado lanzar vibracion
-                                if (isAlarma) {
-                                    // Handling vibrations for Android 8.0 (Oreo) and above
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                        val effect = VibrationEffect.createOneShot(
-                                            1000000,
-                                            VibrationEffect.DEFAULT_AMPLITUDE
-                                        )
-                                        vibrator.vibrate(effect)
-                                    } else {
-                                        // Handling vibrations for devices below Android 8.0
-                                        vibrator.vibrate(1000000)
-                                    }
-                                }
-
-
-                        //modificar data
-                    }
-                    }
-                    catch(e: Exception){
-                        Log.v("abc", "exception "+e.message+ "    completo   "+e.toString())
+                    } catch (e: Exception) {
+                        Log.v("abc", "exception " + e.message + "    completo   " + e.toString())
                     }
 
                 }
 
 
+            }) {
+                Text(text = "Solo monitorear exposición a gases nocivos")
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = {
+                //onLogAll
+                isLogging = true
+                isLogAll = true
+                CoroutineScope(Dispatchers.Default).launch {
+                    try {
+                        bluetoothController!!.uploadData(isLogAll).collect { value ->
+                        //modificar data
+
+                            var lol = value.substring(0, value.length - 1)
+
+                            var cadena = lol.split(",").toTypedArray()
+
+                            firebaseClient.registrarLogGas(
+                                LogGas(
+                                    userData!!.userId,
+                                    "CH4 (metano)",
+                                    cadena.get(1).toDouble(),
+                                    "ppm",
+                                    LocalDate.now().dayOfMonth,
+                                    LocalDate.now().monthValue,
+                                    LocalDate.now().year,
+                                    LocalTime.now().hour,
+                                    LocalTime.now().minute,
+                                    LocalTime.now().second
+                                )
+                            )
+
+                            firebaseClient.registrarLogGas(
+                                LogGas(
+                                    userData!!.userId,
+                                    "CO (monóxido de carbono)",
+                                    cadena.get(2).toDouble(),
+                                    "ppm",
+                                    LocalDate.now().dayOfMonth,
+                                    LocalDate.now().monthValue,
+                                    LocalDate.now().year,
+                                    LocalTime.now().hour,
+                                    LocalTime.now().minute,
+                                    LocalTime.now().second
+                                )
+                            )
+
+                            textoData = "CH4 (metano) " + cadena.get(1) + " ppm"
+                            textoData2 = "CO (monóxido de carbono): " + cadena.get(2) + " ppm"
+
+                            if (isLogAll) {
+                                firebaseClient.registrarLogAlcohol(
+                                    LogAlcohol(
+                                        userData.userId,
+                                        cadena.get(0).toDouble(),
+                                        "mg/L",
+                                        LocalDate.now().dayOfMonth,
+                                        LocalDate.now().monthValue,
+                                        LocalDate.now().year,
+                                        LocalTime.now().hour,
+                                        LocalTime.now().minute,
+                                        LocalTime.now().second
+                                    )
+                                )
+                            }
+
+                            var bracUsuario = cadena.get(0).toDouble()
+
+                            //linea extra!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                            bracUsuario-=0.30
+
+                            if (selectedOption == radioOptions[0]) {
+                                //usuario conducira
+
+                                if (bracUsuario > 0.25) {
+
+
+                                    actualTime = LocalTime.now()
+                                    if (pickedTime > actualTime) {
+                                        tiempoDisponible =
+                                            (pickedTime.hour.toDouble() + (pickedTime.minute.toDouble() / 60.0)) - (actualTime.hour.toDouble() + (actualTime.minute.toDouble() / 60.0))
+                                    } else {
+                                        tiempoDisponible =
+                                            (pickedTime.hour.toDouble() + 24 + (pickedTime.minute.toDouble() / 60.0)) - (actualTime.hour.toDouble() + (actualTime.minute.toDouble() / 60.0))
+                                    }
+
+                                    tiempoParaSobriedad = (2 * (bracUsuario - 0.25)) / 0.015
+                                    tiempoParaSobriedadMin = ceil((ceil(tiempoParaSobriedad)-tiempoParaSobriedad)*60).toInt()
+
+                                    if (tiempoParaSobriedad > tiempoDisponible) {
+                                        textoData3 =
+                                            "Su nivel de alcohol es " + redondeoTresDecimal(2 * bracUsuario) + "(BAC)."
+                                        textoData4 =
+                                            "Debe dejar de beber durante " + tiempoParaSobriedad.toInt() + " horas y "+tiempoParaSobriedadMin+" minutos para poder conducir. No podrá conducir a las " + formattedTime + m + " horas."
+
+                                    } else {
+                                        textoData3 =
+                                            "Su nivel de alcohol es " + redondeoTresDecimal(2 * bracUsuario) + "(BAC)."
+                                        textoData4 =
+                                            "Debe dejar de beber durante " + tiempoParaSobriedad.toInt() + " horas y "+tiempoParaSobriedadMin+" minutos para poder conducir."
+                                    }
+
+                                } else {
+                                    textoData3 =
+                                        "Su nivel de alcohol es " + redondeoTresDecimal(2 * bracUsuario) + "(BAC)."
+                                    textoData4 =
+                                        "Puede conducir. Se encuentra dentro del límite legal de alcohol en sangre."
+                                }
+                            } else {
+                                //usuario no conducira
+
+                                if (bracUsuario > 0.25) {
+                                    tiempoParaSobriedad = (2 * (bracUsuario - 0.25)) / 0.015
+                                    textoData3 =
+                                        "Su nivel de alcohol es " + redondeoTresDecimal(2 * bracUsuario) + "(BAC)."
+                                    textoData4 =
+                                        "Debe dejar de beber durante " + tiempoParaSobriedad.toInt() + " horas y "+tiempoParaSobriedadMin+" minutos para estar sobrio."
+                                } else {
+                                    textoData3 =
+                                        "Su nivel de alcohol es " + redondeoTresDecimal(2 * bracUsuario) + "(BAC)."
+                                    textoData4 = "Está sobrio."
+
+                                }
+                            }
+
+                            //}
+
+                            /*   if(cadena.get(1).toDouble()>1000.0){
+                                   isAlarma=true
+
+                                   if(cadena.get(2).toDouble()>200.0){
+                                       textoAlarma="Concentración nociva de CH4 (metano) = "+cadena.get(1).toDouble()+" ppm y CO (monóxido de carbono) = "+cadena.get(2).toDouble()+" ppm"
+                                   }else{
+                                       textoAlarma="Concentración nociva de CH4 (metano) = "+cadena.get(1).toDouble()+" ppm"
+                                   }
+                               }else{
+                                   if(cadena.get(2).toDouble()>200.0){
+                                       isAlarma=true
+                                       textoAlarma="Concentración nociva de CO (monóxido de carbono) = "+cadena.get(2).toDouble()+" ppm"
+                                   }else{
+                                   }
+
+                               }*/
+
+                            if (cadena.get(1).toDouble() > 50.0) {
+                                isAlarma = true
+
+                                if (cadena.get(2).toDouble() > 5.0) {
+                                    textoAlarma =
+                                        "Concentración nociva de CH4 (metano) = " + cadena.get(1)
+                                            .toDouble() + " ppm y CO (monóxido de carbono) = " + cadena.get(
+                                            2
+                                        ).toDouble() + " ppm"
+                                } else {
+                                    textoAlarma =
+                                        "Concentración nociva de CH4 (metano) = " + cadena.get(1)
+                                            .toDouble() + " ppm"
+                                }
+                            } else {
+                                if (cadena.get(2).toDouble() > 5.0) {
+                                    isAlarma = true
+                                    textoAlarma =
+                                        "Concentración nociva de CO (monóxido de carbono) = " + cadena.get(
+                                            2
+                                        ).toDouble() + " ppm"
+                                } else {
+                                }
+
+                            }
+
+                            //si el estado alarma fue activado lanzar vibracion
+                            if (isAlarma) {
+                                // Handling vibrations for Android 8.0 (Oreo) and above
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                    val effect = VibrationEffect.createOneShot(
+                                        1000000,
+                                        VibrationEffect.DEFAULT_AMPLITUDE
+                                    )
+                                    vibrator.vibrate(effect)
+                                } else {
+                                    // Handling vibrations for devices below Android 8.0
+                                    vibrator.vibrate(1000000)
+                                }
+                            }
+
+
+                            //modificar data
+                        }
+                    } catch (e: Exception) {
+                        Log.v("abc", "exception " + e.message + "    completo   " + e.toString())
+                    }
+
+                }
 
 
             }) {
@@ -419,4 +583,10 @@ fun LogScreen(
         bluetoothController!!.closeSocket()
         navController.popBackStack("profile", false)
     }
+
+
+}
+
+fun redondeoTresDecimal(num: Double):String{
+    return "%.3f".format(num)
 }

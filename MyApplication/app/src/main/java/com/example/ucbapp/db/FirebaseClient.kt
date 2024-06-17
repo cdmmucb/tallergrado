@@ -107,18 +107,18 @@ class FirebaseClient(private val context: Context) {
                         "unidadAltura", cliente.unidadAltura
                     ).await()
 
-                    Toast.makeText(context, "Actualización exitosa.", Toast.LENGTH_LONG).show()
+                 /*   Toast.makeText(context, "Actualización exitosa.", Toast.LENGTH_LONG).show()*/
 
                     navController.popBackStack("profile", false)
 
                 } catch (e: Exception) {
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(
+                      /*  Toast.makeText(
                             context,
                             "Error de actualización: " + e.message,
                             Toast.LENGTH_LONG
                         )
-                            .show()
+                            .show()*/
                         Log.v("Error:", e.message.toString());
                     }
                 }
