@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -30,20 +31,26 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import co.yml.charts.common.model.Point
+import co.yml.charts.ui.linechart.model.LineChartData
 import com.example.ucbapp.bluetooth.BluetoothController
 import com.example.ucbapp.change_password.ChangePasswordScreen
 import com.example.ucbapp.db.FirebaseClient
 import com.example.ucbapp.delete_account.DeleteAccountScreen
 import com.example.ucbapp.edit_data.EditDataScreen
+
 import com.example.ucbapp.history_alcohol.HistoryAlcoholScreen
 import com.example.ucbapp.history_gas.HistoryGasScreen
 import com.example.ucbapp.info_alcohol.InfoAlcoholScreen
 import com.example.ucbapp.info_gas.InfoGasScreen
 import com.example.ucbapp.log.LogScreen
 import com.example.ucbapp.model.Cliente
+import com.example.ucbapp.model.LogAlcohol
+import com.example.ucbapp.model.LogAlcoholAgregado
 import com.example.ucbapp.notification.NotificationService
 import com.example.ucbapp.profile.ProfileScreen
 import com.example.ucbapp.report_alcohol.ReportAlcoholScreen
@@ -53,13 +60,18 @@ import com.example.ucbapp.sign_in.SignInScreen
 import com.example.ucbapp.sign_in.SignInViewModel
 import com.example.ucbapp.ui.theme.UcbappTheme
 import com.google.android.gms.auth.api.identity.Identity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
 
 class MainActivity : ComponentActivity() {
 
 
     var isBluetooth: Boolean = false
+
 
     //private val bluetoothController = BluetoothController(applicationContext)
     private val bluetoothController by lazy {
@@ -84,8 +96,85 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    var list = mutableStateListOf<LogAlcohol>()
+    var listMaxAlcohol = mutableStateListOf<LogAlcoholAgregado>()
+    var pointsData = mutableStateListOf<Point>()
+    var listaPrueba = mutableStateListOf<String>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        if(googleAuthUiClient.getSignedInUser()!=null){
+        CoroutineScope(Dispatchers.IO).launch {
+            list.clear()
+            listMaxAlcohol.clear()
+            val aux = firebaseClient.getLogAlcohol(googleAuthUiClient.getSignedInUser()!!.userId)
+            if (aux != null && aux.isNotEmpty()) {
+
+                list.addAll(aux)
+            }
+
+            list.sortBy {
+                LocalDateTime.of(
+                    LocalDate.of(it.year, it.month, it.day),
+                    LocalTime.of(it.hour, it.minute, it.second)
+                )
+            }
+            for (i in list.indices) {
+
+                    if (listMaxAlcohol.size > 0) {
+                        if (list[i].day == listMaxAlcohol[listMaxAlcohol.size - 1].day &&
+                            list[i].month == listMaxAlcohol[listMaxAlcohol.size - 1].month &&
+                            list[i].year == listMaxAlcohol[listMaxAlcohol.size - 1].year
+                        ) {
+                            if (list[i].nivelAlcohol > listMaxAlcohol[listMaxAlcohol.size - 1].nivelAlcohol) {
+                                listMaxAlcohol[listMaxAlcohol.size - 1].nivelAlcohol =
+                                    list[i].nivelAlcohol
+                            }
+                        } else {
+                            listMaxAlcohol.add(
+                                LogAlcoholAgregado(
+                                    list[i].nivelAlcohol,
+                                    list[i].unidadAlcohol,
+                                    list[i].day,
+                                    list[i].month,
+                                    list[i].year
+                                )
+                            )
+                        }
+                    } else {
+                        listMaxAlcohol.add(
+                            LogAlcoholAgregado(
+                                list[i].nivelAlcohol,
+                                list[i].unidadAlcohol,
+                                list[i].day,
+                                list[i].month,
+                                list[i].year
+                            )
+                        )
+                    }
+
+
+            }
+
+
+            pointsData.clear()
+            listaPrueba.clear()
+            pointsData.add(Point(0f,0f))
+            listaPrueba.add("0")
+
+            listMaxAlcohol.forEachIndexed { i, element ->
+                pointsData.add(Point(i+1.toFloat(),element.nivelAlcohol.toFloat()))
+                listaPrueba.add(listMaxAlcohol[i].day.toString() + "/" +
+                        listMaxAlcohol[i].month.toString()+ "/" +
+                        listMaxAlcohol[i].year.toString())
+                Log.v("abc","punto "+i+"="+pointsData[i])
+                Log.v("abc","label"+i+"="+listaPrueba[i])
+            }
+            Log.v("abc","terminado")
+            Log.v("abc","tamanio pointsdata = "+pointsData.size)
+            Log.v("abc","tamanio listaprueba = "+listaPrueba.size)
+        }}
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -145,6 +234,7 @@ class MainActivity : ComponentActivity() {
                             )
 
                             LaunchedEffect(key1 = state.isSignInSuccessful) {
+
                                 if (state.isSignInSuccessful) {
                                     Toast.makeText(
                                         applicationContext,
@@ -359,20 +449,25 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("report_alcohol") {
-                            ReportAlcoholScreen(userData = googleAuthUiClient.getSignedInUser(),
+                            ReportAlcoholScreen(
+                                pointsData,
+                                listaPrueba,
+                                userData = googleAuthUiClient.getSignedInUser(),
                                 firebaseClient,
                                 onReportAlcohol = {
                                     lifecycleScope.launch {
 
-                                        Toast.makeText(
+                                        /*Toast.makeText(
                                             applicationContext,
                                             "report alcohol",
                                             Toast.LENGTH_LONG
-                                        ).show()
+                                        ).show()*/
 
                                         //navController.popBackStack()
+
                                     }
                                 }
+
                             )
                         }
 
@@ -484,4 +579,16 @@ class MainActivity : ComponentActivity() {
 
     }
 }
+
+@Composable
+inline fun <reified T : ViewModel> NavBackStackEntry.sharedViewModel(
+    navController: NavHostController,
+): T {
+    val navGraphRoute = destination.parent?.route ?: return viewModel()
+    val parentEntry = remember(this) {
+        navController.getBackStackEntry(navGraphRoute)
+    }
+    return viewModel(parentEntry)
+}
+
 

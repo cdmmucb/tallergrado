@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,6 +19,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -25,6 +27,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,6 +37,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import co.yml.charts.axis.AxisData
+import co.yml.charts.common.extensions.formatToSinglePrecision
+import co.yml.charts.common.model.Point
+import co.yml.charts.ui.linechart.LineChart
+import co.yml.charts.ui.linechart.model.GridLines
+import co.yml.charts.ui.linechart.model.IntersectionPoint
+import co.yml.charts.ui.linechart.model.Line
+import co.yml.charts.ui.linechart.model.LineChartData
+import co.yml.charts.ui.linechart.model.LinePlotData
+import co.yml.charts.ui.linechart.model.LineStyle
+import co.yml.charts.ui.linechart.model.SelectionHighlightPoint
+import co.yml.charts.ui.linechart.model.SelectionHighlightPopUp
+import co.yml.charts.ui.linechart.model.ShadowUnderLine
 import coil.compose.AsyncImage
 import com.example.ucbapp.db.FirebaseClient
 import com.example.ucbapp.model.LogAlcohol
@@ -45,14 +61,16 @@ import com.vanpra.composematerialdialogs.rememberMaterialDialogState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import okhttp3.internal.notifyAll
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
-
 @SuppressLint("CoroutineCreationDuringComposition")
 @Composable
 fun ReportAlcoholScreen(
+    pointsData: List<Point>,
+    listaPrueba: List<String>,
     userData: UserData?,
     firebaseClient: FirebaseClient,
     onReportAlcohol: () -> Unit
@@ -86,6 +104,52 @@ fun ReportAlcoholScreen(
     val dateDialogState = rememberMaterialDialogState()
     val dateDialogState2 = rememberMaterialDialogState()
 
+
+
+   /* var xAxisData = AxisData.Builder()
+        .axisStepSize(100.dp)
+        //.backgroundColor(Color.Blue)
+        .steps(pointsData.size-1)
+        .labelData { i ->
+            i.toString()
+        }
+        .labelAndAxisLinePadding(15.dp)
+        .build()
+    //Log.v("abc", listGrafo[0].toString())
+
+    var yAxisData = AxisData.Builder()
+        .steps(pointsData.size-1)
+        //.backgroundColor(Color.Red)
+        .labelAndAxisLinePadding(20.dp)
+        .labelData { i ->
+            val yScale = 5 / (pointsData.size-1)
+            (i * yScale)/*.formatToSinglePrecision()*/.toString()
+        }.build()
+
+
+    var lineChartData = LineChartData(
+        linePlotData = LinePlotData(
+            lines = listOf(
+                Line(
+                    dataPoints = pointsData,
+                    LineStyle(),
+                    IntersectionPoint(),
+                    SelectionHighlightPoint(),
+                    ShadowUnderLine(),
+                    SelectionHighlightPopUp()
+                )
+            ),
+        ),
+        xAxisData = xAxisData,
+        yAxisData = yAxisData,
+        gridLines = GridLines(),
+        backgroundColor = Color.White
+    )*/
+
+
+
+
+
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
@@ -99,7 +163,9 @@ fun ReportAlcoholScreen(
             fontWeight = FontWeight.SemiBold
         )
         Spacer(modifier = Modifier.height(16.dp))
+        SingleLineChart(pointsData,listaPrueba)
 
+        Spacer(modifier = Modifier.height(16.dp))
         Button(onClick = {
             CoroutineScope(Dispatchers.IO).launch {
                 list.clear()
@@ -158,6 +224,7 @@ fun ReportAlcoholScreen(
 
                     }
                 }
+
             }
         }) {
             Text(text = "Generar reporte")
@@ -246,7 +313,12 @@ fun ReportAlcoholScreen(
             }
         }
 
+
+
         if (listMaxAlcohol.isNotEmpty()) {
+
+
+
             LazyColumn(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
 
@@ -262,9 +334,9 @@ fun ReportAlcoholScreen(
                     )
                     if (index > 0) {
                         if (item.nivelAlcohol >= listMaxAlcohol[index - 1].nivelAlcohol) {
-                            Text(text = (item.nivelAlcohol - listMaxAlcohol[index - 1].nivelAlcohol).toString() + " " + item.unidadAlcohol + " más que el anterior día registrado")
+                            Text(text = redondeoTresDecimal(item.nivelAlcohol - listMaxAlcohol[index - 1].nivelAlcohol) + " " + item.unidadAlcohol + " más que el anterior día registrado")
                         } else {
-                            Text(text = (listMaxAlcohol[index - 1].nivelAlcohol - item.nivelAlcohol).toString() + " " + item.unidadAlcohol + " menos que el anterior día registrado")
+                            Text(text = redondeoTresDecimal(listMaxAlcohol[index - 1].nivelAlcohol - item.nivelAlcohol) + " " + item.unidadAlcohol + " menos que el anterior día registrado")
                         }
                     }
                     Divider(color = Color.Black)
@@ -272,8 +344,58 @@ fun ReportAlcoholScreen(
                 }
 
             }
+
         }
     }
 
 
+}
+
+fun redondeoTresDecimal(num: Double):String{
+    return "%.3f".format(num)
+}
+
+@Composable
+private fun SingleLineChart(pointsData: List<Point>,listaPrueba: List<String>) {
+    val steps = 5
+    val xAxisData = AxisData.Builder()
+        .axisStepSize(100.dp)
+        .topPadding(105.dp)
+        .steps(pointsData.size - 1)
+        .labelData { i -> listaPrueba[i] }
+        .labelAndAxisLinePadding(15.dp)
+        .build()
+    val yAxisData = AxisData.Builder()
+        .steps(steps)
+        .labelAndAxisLinePadding(20.dp)
+        .labelData { i ->
+            // Add yMin to get the negative axis values to the scale
+            val yMin = 0f
+            val yMax = pointsData.maxOf { it.y }
+            val yScale = (yMax - yMin) / steps
+            ((i * yScale) + yMin).formatToSinglePrecision()
+        }.build()
+    val data = LineChartData(
+        linePlotData = LinePlotData(
+            lines = listOf(
+                Line(
+                    dataPoints = pointsData,
+                    LineStyle(),
+                    IntersectionPoint(),
+                    SelectionHighlightPoint(),
+                    ShadowUnderLine(),
+                    SelectionHighlightPopUp()
+                )
+            )
+        ),
+        xAxisData = xAxisData,
+        yAxisData = yAxisData,
+
+    )
+    LineChart(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(300.dp),
+        lineChartData = data
+    )
 }

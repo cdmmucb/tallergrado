@@ -92,6 +92,13 @@ fun LogScreen(
     var tiempoParaSobriedadMin by remember { mutableStateOf(0) }
     var m by remember { mutableStateOf(if (pickedTime.hour < 13) "am" else "pm") }
 
+    //var coLimit = 200.0
+    //var metanoLimit = 1000.0
+    var coLimit = 10.0
+    var metanoLimit = 20.0
+
+    var resto=0.30
+
     val formattedTime by remember {
         derivedStateOf {
             DateTimeFormatter
@@ -220,27 +227,12 @@ fun LogScreen(
 
                             //}
 
-                            /*   if(cadena.get(1).toDouble()>1000.0){
-                                   isAlarma=true
 
-                                   if(cadena.get(2).toDouble()>200.0){
-                                       textoAlarma="Concentración nociva de CH4 (metano) = "+cadena.get(1).toDouble()+" ppm y CO (monóxido de carbono) = "+cadena.get(2).toDouble()+" ppm"
-                                   }else{
-                                       textoAlarma="Concentración nociva de CH4 (metano) = "+cadena.get(1).toDouble()+" ppm"
-                                   }
-                               }else{
-                                   if(cadena.get(2).toDouble()>200.0){
-                                       isAlarma=true
-                                       textoAlarma="Concentración nociva de CO (monóxido de carbono) = "+cadena.get(2).toDouble()+" ppm"
-                                   }else{
-                                   }
 
-                               }*/
-
-                            if (cadena.get(1).toDouble() > 50.0) {
+                            if (cadena.get(1).toDouble() > metanoLimit) {
                                 isAlarma = true
 
-                                if (cadena.get(2).toDouble() > 5.0) {
+                                if (cadena.get(2).toDouble() > coLimit) {
                                     textoAlarma =
                                         "Concentración nociva de CH4 (metano) = " + cadena.get(1)
                                             .toDouble() + " ppm y CO (monóxido de carbono) = " + cadena.get(
@@ -252,7 +244,7 @@ fun LogScreen(
                                             .toDouble() + " ppm"
                                 }
                             } else {
-                                if (cadena.get(2).toDouble() > 5.0) {
+                                if (cadena.get(2).toDouble() > coLimit) {
                                     isAlarma = true
                                     textoAlarma =
                                         "Concentración nociva de CO (monóxido de carbono) = " + cadena.get(
@@ -357,7 +349,7 @@ fun LogScreen(
                             var bracUsuario = cadena.get(0).toDouble()
 
                             //linea extra!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                            bracUsuario-=0.30
+                            bracUsuario-=resto
 
                             if (selectedOption == radioOptions[0]) {
                                 //usuario conducira
@@ -415,27 +407,12 @@ fun LogScreen(
 
                             //}
 
-                            /*   if(cadena.get(1).toDouble()>1000.0){
-                                   isAlarma=true
 
-                                   if(cadena.get(2).toDouble()>200.0){
-                                       textoAlarma="Concentración nociva de CH4 (metano) = "+cadena.get(1).toDouble()+" ppm y CO (monóxido de carbono) = "+cadena.get(2).toDouble()+" ppm"
-                                   }else{
-                                       textoAlarma="Concentración nociva de CH4 (metano) = "+cadena.get(1).toDouble()+" ppm"
-                                   }
-                               }else{
-                                   if(cadena.get(2).toDouble()>200.0){
-                                       isAlarma=true
-                                       textoAlarma="Concentración nociva de CO (monóxido de carbono) = "+cadena.get(2).toDouble()+" ppm"
-                                   }else{
-                                   }
 
-                               }*/
-
-                            if (cadena.get(1).toDouble() > 50.0) {
+                            if (cadena.get(1).toDouble() > metanoLimit) {
                                 isAlarma = true
 
-                                if (cadena.get(2).toDouble() > 5.0) {
+                                if (cadena.get(2).toDouble() > coLimit) {
                                     textoAlarma =
                                         "Concentración nociva de CH4 (metano) = " + cadena.get(1)
                                             .toDouble() + " ppm y CO (monóxido de carbono) = " + cadena.get(
@@ -447,7 +424,7 @@ fun LogScreen(
                                             .toDouble() + " ppm"
                                 }
                             } else {
-                                if (cadena.get(2).toDouble() > 5.0) {
+                                if (cadena.get(2).toDouble() > coLimit) {
                                     isAlarma = true
                                     textoAlarma =
                                         "Concentración nociva de CO (monóxido de carbono) = " + cadena.get(

@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.ucbapp"
-        minSdk = 23
+        minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -85,4 +85,6 @@ dependencies {
 
     implementation ("io.github.vanpra.compose-material-dialogs:datetime:0.8.1-rc")
     coreLibraryDesugaring ("com.android.tools:desugar_jdk_libs:1.1.6")
+
+    implementation ("co.yml:ycharts:2.1.0")
 }
